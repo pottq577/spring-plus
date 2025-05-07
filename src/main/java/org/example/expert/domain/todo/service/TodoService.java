@@ -51,30 +51,7 @@ public class TodoService {
     @Transactional(readOnly = true)
     public Page<TodoResponse> getTodos(TodoFindRequest request, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Todo> todos;
-        LocalDateTime startDate = null;
-        LocalDateTime endDate = null;
-
-        if (request.getStartDate() != null) {
-            startDate = LocalDateTime.parse(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            endDate = LocalDateTime.parse(request.getEndDate());
-        }
-
-        if (request.getWeather() != null && request.getStartDate() != null && request.getEndDate() != null) {
-            // 둘 다 있을 때
-            todos = todoRepository.findAllByWeatherAndDateRange(pageable, request.getWeather(), startDate, endDate);
-        } else if (request.getWeather() != null) {
-            // 날씨만 있을 때
-            todos = todoRepository.findAllByWeather(pageable, request.getWeather());
-        } else if (request.getStartDate() != null && request.getEndDate() != null) {
-            // 날짜만 있을 때
-            todos = todoRepository.findAllByDateRange(pageable, startDate, endDate);
-        } else {
-            // 아무 조건도 없을 때
-            todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
-        }
+        Page<Todo> todos = getTodosByCondition(request, pageable);
 
         return todos.map(todo -> new TodoResponse(
                 todo.getId(),
@@ -85,6 +62,29 @@ public class TodoService {
                 todo.getCreatedAt(),
                 todo.getModifiedAt()
         ));
+    }
+
+    private Page<Todo> getTodosByCondition(TodoFindRequest request, Pageable pageable) {
+        String weather = request.getWeather();
+        LocalDateTime startDate = parseDate(request.getStartDate());
+        LocalDateTime endDate = parseDate(request.getEndDate());
+
+        boolean hasWeather = weather != null;
+        boolean hasDate = startDate != null && endDate != null;
+
+        if (hasWeather && hasDate) {
+            return todoRepository.findAllByWeatherAndDateRange(pageable, request.getWeather(), startDate, endDate);
+        } else if (hasWeather) {
+            return todoRepository.findAllByWeather(pageable, weather);
+        } else if (hasDate) {
+            return todoRepository.findAllByDateRange(pageable, startDate, endDate);
+        } else {
+            return todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        }
+    }
+
+    private LocalDateTime parseDate(String date){
+        return (date != null) ? LocalDateTime.parse(date) : null;
     }
 
     @Transactional(readOnly = true)
