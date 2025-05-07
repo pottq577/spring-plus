@@ -8,5 +8,6 @@ import lombok.RequiredArgsConstructor;
 public class TodoFindRequest {
 
     private final String weather;
-    private final String modifiedAt;
+    private final String startDate;
+    private final String endDate;
 }
