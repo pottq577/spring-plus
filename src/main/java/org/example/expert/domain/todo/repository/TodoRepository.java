@@ -21,13 +21,41 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     @EntityGraph(attributePaths = {"user"})
     Page<Todo> findAllByWeatherOrderByModifiedAtDesc(Pageable pageable, String weather);
 
+    @Query("""
+        SELECT t
+        FROM Todo t
+        WHERE t.weather = :weather
+        ORDER BY t.modifiedAt DESC
+        """)
+    @EntityGraph(attributePaths = {"user"})
+    Page<Todo> findAllByWeather(Pageable pageable, String weather);
+
     // 날짜만 있을 때
     @EntityGraph(attributePaths = {"user"})
     Page<Todo> findAllByModifiedAtBetweenOrderByModifiedAtDesc(Pageable pageable, LocalDateTime startDate, LocalDateTime endDate);
 
+    @Query("""
+        SELECT t
+        FROM Todo t
+        WHERE t.modifiedAt BETWEEN :startDate AND :endDate
+        ORDER BY t.modifiedAt DESC
+        """)
+    @EntityGraph(attributePaths = {"user"})
+    Page<Todo> findAllByDateRange(Pageable pageable, LocalDateTime startDate, LocalDateTime endDate);
+
     // 둘 다 있을 때
     @EntityGraph(attributePaths = {"user"})
     Page<Todo> findAllByWeatherAndModifiedAtBetweenOrderByModifiedAtDesc(Pageable pageable, String weather, LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query("""
+        SELECT t
+        FROM Todo t
+        WHERE t.weather = :weather AND t.modifiedAt BETWEEN :startDate AND :endDate
+        ORDER BY t.modifiedAt DESC
+        """)
+    @EntityGraph(attributePaths = {"user"})
+    Page<Todo> findAllByWeatherAndDateRange(Pageable pageable, String weather, LocalDateTime startDate, LocalDateTime endDate);
+
 
     @Query("SELECT t FROM Todo t " +
             "LEFT JOIN t.user " +

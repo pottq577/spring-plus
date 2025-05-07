@@ -64,13 +64,13 @@ public class TodoService {
 
         if (request.getWeather() != null && request.getStartDate() != null && request.getEndDate() != null) {
             // 둘 다 있을 때
-            todos = todoRepository.findAllByWeatherAndModifiedAtBetweenOrderByModifiedAtDesc(pageable, request.getWeather(), startDate, endDate);
+            todos = todoRepository.findAllByWeatherAndDateRange(pageable, request.getWeather(), startDate, endDate);
         } else if (request.getWeather() != null) {
             // 날씨만 있을 때
-            todos = todoRepository.findAllByWeatherOrderByModifiedAtDesc(pageable, request.getWeather());
+            todos = todoRepository.findAllByWeather(pageable, request.getWeather());
         } else if (request.getStartDate() != null && request.getEndDate() != null) {
             // 날짜만 있을 때
-            todos = todoRepository.findAllByModifiedAtBetweenOrderByModifiedAtDesc(pageable, startDate, endDate);
+            todos = todoRepository.findAllByDateRange(pageable, startDate, endDate);
         } else {
             // 아무 조건도 없을 때
             todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
