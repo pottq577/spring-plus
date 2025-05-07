@@ -1,9 +1,11 @@
 package org.example.expert.domain.todo.service;
 
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.example.expert.client.WeatherClient;
 import org.example.expert.domain.common.dto.AuthUser;
 import org.example.expert.domain.common.exception.InvalidRequestException;
+import org.example.expert.domain.todo.dto.request.TodoFindRequest;
 import org.example.expert.domain.todo.dto.request.TodoSaveRequest;
 import org.example.expert.domain.todo.dto.response.TodoResponse;
 import org.example.expert.domain.todo.dto.response.TodoSaveResponse;
@@ -47,10 +49,32 @@ public class TodoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TodoResponse> getTodos(int page, int size) {
+    public Page<TodoResponse> getTodos(TodoFindRequest request, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Todo> todos;
+        LocalDateTime startDate = null;
+        LocalDateTime endDate = null;
 
-        Page<Todo> todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        if (request.getStartDate() != null) {
+            startDate = LocalDateTime.parse(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            endDate = LocalDateTime.parse(request.getEndDate());
+        }
+
+        if (request.getWeather() != null && request.getStartDate() != null && request.getEndDate() != null) {
+            // 둘 다 있을 때
+            todos = todoRepository.findAllByWeatherAndModifiedAtBetweenOrderByModifiedAtDesc(pageable, request.getWeather(), startDate, endDate);
+        } else if (request.getWeather() != null) {
+            // 날씨만 있을 때
+            todos = todoRepository.findAllByWeatherOrderByModifiedAtDesc(pageable, request.getWeather());
+        } else if (request.getStartDate() != null && request.getEndDate() != null) {
+            // 날짜만 있을 때
+            todos = todoRepository.findAllByModifiedAtBetweenOrderByModifiedAtDesc(pageable, startDate, endDate);
+        } else {
+            // 아무 조건도 없을 때
+            todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        }
 
         return todos.map(todo -> new TodoResponse(
                 todo.getId(),
