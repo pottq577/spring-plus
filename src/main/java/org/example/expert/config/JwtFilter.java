@@ -8,6 +8,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.expert.domain.user.enums.UserRole;
@@ -15,6 +16,7 @@ import org.example.expert.domain.user.enums.UserRole;
 import java.io.IOException;
 import org.example.expert.global.security.UserPrincipal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -83,7 +85,7 @@ public class JwtFilter extends OncePerRequestFilter {
         UserPrincipal principal = new UserPrincipal(userId, email, userRole);
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(principal, principal.getAuthorities());
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
