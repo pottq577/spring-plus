@@ -1,5 +1,6 @@
 package org.example.expert.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,13 @@ public class SecurityConfig {
                     .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(handler ->
+                handler.authenticationEntryPoint((request, response, e) -> {
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("{\"message\":\"인증에 실패했습니다.\"}");
+                })
+            )
             .build();
     }
 }
