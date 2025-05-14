@@ -8,11 +8,15 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.expert.domain.user.enums.UserRole;
 
 import java.io.IOException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
@@ -51,18 +55,24 @@ public class JwtFilter extends OncePerRequestFilter {
             }
 
             UserRole userRole = UserRole.valueOf(claims.get("userRole", String.class));
+            Long userId = Long.parseLong(claims.getSubject());
+            String email = claims.get("email", String.class);
 
-            request.setAttribute("userId", Long.parseLong(claims.getSubject()));
-            request.setAttribute("email", claims.get("email"));
-            request.setAttribute("userRole", claims.get("userRole"));
+            request.setAttribute("userId", userId);
+            request.setAttribute("email", email);
+            request.setAttribute("userRole", userRole.name());
 
-            if (url.startsWith("/admin")) {
-                // 관리자 권한이 없는 경우 403을 반환합니다.
-                if (!UserRole.ADMIN.equals(userRole)) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "관리자 권한이 없습니다.");
-                    return;
-                }
-                chain.doFilter(request, response);
+            UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                    userId,
+                    null,
+                    List.of(new SimpleGrantedAuthority("ROLE_" + userRole.name()))
+                );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            if (url.startsWith("/admin") && !UserRole.ADMIN.equals(userRole)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "관리자 권한이 없습니다.");
                 return;
             }
 
