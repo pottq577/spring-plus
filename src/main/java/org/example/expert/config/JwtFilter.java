@@ -2,26 +2,27 @@ package org.example.expert.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.expert.domain.user.enums.UserRole;
 
 import java.io.IOException;
+import org.example.expert.global.security.UserPrincipal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final String AUTHORIZATION = "Authorization";
 
     private final JwtUtil jwtUtil;
 
@@ -36,45 +37,11 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        String bearerJwt = request.getHeader("Authorization");
-
-        if (bearerJwt == null) {
-            // 토큰이 없는 경우 400을 반환합니다.
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "JWT 토큰이 필요합니다.");
-            return;
-        }
-
-        String jwt = jwtUtil.substringToken(bearerJwt);
-
         try {
-            // JWT 유효성 검사와 claims 추출
-            Claims claims = jwtUtil.extractClaims(jwt);
-            if (claims == null) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "잘못된 JWT 토큰입니다.");
-                return;
-            }
+            String token = extractToken(request);
+            Claims claims = validateAndParseClaims(token);
 
-            UserRole userRole = UserRole.valueOf(claims.get("userRole", String.class));
-            Long userId = Long.parseLong(claims.getSubject());
-            String email = claims.get("email", String.class);
-
-            request.setAttribute("userId", userId);
-            request.setAttribute("email", email);
-            request.setAttribute("userRole", userRole.name());
-
-            UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                    userId,
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + userRole.name()))
-                );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            if (url.startsWith("/admin") && !UserRole.ADMIN.equals(userRole)) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "관리자 권한이 없습니다.");
-                return;
-            }
+            setAuthorization(claims);
 
             chain.doFilter(request, response);
         } catch (SecurityException | MalformedJwtException e) {
@@ -90,6 +57,35 @@ public class JwtFilter extends OncePerRequestFilter {
             log.error("Internal server error", e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private String extractToken(HttpServletRequest request) throws JwtException {
+        String bearerToken = request.getHeader(AUTHORIZATION);
+        if (bearerToken == null) {
+            throw new JwtException("JWT 토큰이 필요합니다.");
+        }
+        return jwtUtil.substringToken(bearerToken);
+    }
+
+    private Claims validateAndParseClaims(String token) throws JwtException {
+        Claims claims = jwtUtil.extractClaims(token);
+        if (claims == null) {
+            throw new JwtException("잘못된 JWT 토큰입니다.");
+        }
+        return claims;
+    }
+
+    private void setAuthorization(Claims claims) {
+        UserRole userRole = UserRole.valueOf(claims.get("userRole", String.class));
+        Long userId = Long.parseLong(claims.getSubject());
+        String email = claims.get("email", String.class);
+
+        UserPrincipal principal = new UserPrincipal(userId, email, userRole);
+
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(principal, principal.getAuthorities());
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
 }
