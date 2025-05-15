@@ -45,7 +45,7 @@ public class TodoQueryRepository {
                 qTodo.comments.size()
             ))
             .from(qTodo)
-            .leftJoin(qTodo.managers, qManager).fetchJoin()
+            .leftJoin(qTodo.managers, qManager)
             .where(
                 containsKeyword(request.getKeyword()),
                 betweenDate(request.getStart(), request.getEnd()),
