@@ -48,8 +48,8 @@ public class TodoQueryRepository {
             .leftJoin(qTodo.managers, qManager)
             .where(
                 containsKeyword(request.getKeyword()),
-                betweenDate(request.getStart(), request.getEnd()),
-                eqNickname(request.getNickname())
+                containsNickname(request.getNickname()),
+                betweenDate(request.getStart(), request.getEnd())
             )
             .orderBy(qTodo.createdAt.desc())
             .offset(pageable.getOffset())
@@ -73,10 +73,10 @@ public class TodoQueryRepository {
         return qTodo.createdAt.between(start, end);
     }
 
-    private BooleanExpression eqNickname(String nickname) {
+    private BooleanExpression containsNickname(String nickname) {
         if (StringUtil.isNullOrEmpty(nickname)) {
             return null;
         }
-        return qManager.user.nickname.eq(nickname);
+        return qManager.user.nickname.contains(nickname);
     }
 }
