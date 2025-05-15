@@ -51,6 +51,7 @@ public class TodoQueryRepository {
                 betweenDate(request.getStart(), request.getEnd()),
                 eqNickname(request.getNickname())
             )
+            .orderBy(qTodo.createdAt.desc())
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();
