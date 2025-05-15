@@ -56,7 +56,18 @@ public class TodoQueryRepository {
             .limit(pageable.getPageSize())
             .fetch();
 
-        return new PageImpl<>(contents);
+        Long total = queryFactory
+            .select(qTodo.count())
+            .from(qTodo)
+            .leftJoin(qTodo.managers, qManager)
+            .where(
+                containsKeyword(request.getKeyword()),
+                containsNickname(request.getNickname()),
+                betweenDate(request.getStart(), request.getEnd())
+            )
+            .fetchOne();
+
+        return new PageImpl<>(contents, pageable, total != null ? total : 0L);
     }
 
     private BooleanExpression containsKeyword(String keyword) {
