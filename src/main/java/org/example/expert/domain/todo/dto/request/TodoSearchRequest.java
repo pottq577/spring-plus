@@ -1,15 +1,24 @@
 package org.example.expert.domain.todo.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class TodoSearchRequest {
 
-    private final String keyword;
-    private final LocalDateTime start;
-    private final LocalDateTime end;
-    private final String nickname;
+    private String keyword;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Nullable
+    private LocalDateTime start;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Nullable
+    private LocalDateTime end;
+
+    private String nickname;
 }
